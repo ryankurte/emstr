@@ -24,9 +24,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        include:
-          toolchain: [ stable, nightly ]
-          args: [ "--features=std", "--no-default-features" ]
+        toolchain: [ stable, nightly ]
+        args: [ "--features=std", "--no-default-features" ]
 
     steps:
       - name: Checkout sources
