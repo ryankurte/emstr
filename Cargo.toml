@@ -1,0 +1,14 @@
+[package]
+name = "emstr"
+description = "Helpers for working with string types for embedded devices"
+repository = "https://github.com/ryankurte/emstr"
+version = "0.1.0"
+edition = "2021"
+license = "MPL-2.0"
+
+[features]
+std = [ "thiserror" ]
+default = [ "std" ]
+
+[dependencies]
+thiserror = { version = "1.0.38", optional = true, default_features = false }
