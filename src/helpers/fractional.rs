@@ -60,8 +60,6 @@ impl <N: Number> EncodeStr for Fractional<N> {
         let int_part = self.value / self.divisor;
         let dec_part = (self.value % self.divisor).abs();
 
-        println!("int: {} dec: {} pad: {}", int_part, dec_part, self.divisor);
-
         // Write integer part
         let mut n = int_part.write(&mut buff[..])?;
 
