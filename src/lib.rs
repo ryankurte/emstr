@@ -25,6 +25,8 @@ pub use error::Error;
 
 mod types;
 
+pub mod helpers;
+
 /// [EncodeStr] implemented for string writable types
 pub trait EncodeStr {
     /// Fetch the encoded length of the object
