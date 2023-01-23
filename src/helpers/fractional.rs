@@ -44,24 +44,40 @@ impl <N: Number> EncodeStr for Fractional<N> {
     fn len(&self) -> usize {
         let int_part = self.value / self.divisor;
         let dec_part = (self.value % self.divisor).abs();
+
+        let mut n = int_part.len();
         
         // No decimal part, just display integer
         if dec_part.is_zero() {
-            int_part.len()
+            return n;
+        }
+
+        // Negative integer part, add -ve sign
+        if int_part.is_zero() && self.value.is_negative() {
+            n += 1;
+        }
 
         // Decimal part, integer + (divisior - 1) + 1
-        } else {
-            int_part.len() + self.divisor.len()
-        }
+        n += self.divisor.len();
+
+        n
     }
 
     fn write(&self, buff: &mut [u8]) -> Result<usize, crate::Error> {
+        let mut n = 0;
+
         // Split integer and decimal components
         let int_part = self.value / self.divisor;
         let dec_part = (self.value % self.divisor).abs();
 
+        // Write -ve sign for -ve fractions
+        if int_part.is_zero() && self.value.is_negative() {
+            buff[n] = '-' as u8;
+            n += 1;
+        }
+
         // Write integer part
-        let mut n = int_part.write(&mut buff[..])?;
+        n += int_part.write(&mut buff[n..])?;
 
         // Skip decimal portion for whole numbers
         if dec_part.is_zero() {
@@ -102,6 +118,8 @@ mod test {
     fn fractional_i16() {
         let tests = &[
             (10, 10, "1"),
+            (10, 100, "0.1"),
+            (-10, 100, "-0.1"),
             (15, 10, "1.5"),
             (105, 100, "1.05"),
             (-10, 10, "-1"),
@@ -137,7 +155,11 @@ mod test {
             (-10, 10, "-1"),
             (-15, 10, "-1.5"),
             (-105, 100, "-1.05"),
+            (105, 1000, "0.105"),
+            (-105, 1000, "-0.105"),
             (123473634214312, 1_000_000, "123473634.214312"),
+            (40_000_100_000_000_000, 1_000_000_000_000, "40000.100000000000"),
+            (-40_000_123_000_000_000, 1_000_000_000_000, "-40000.123000000000"),
         ];
 
         encode_frac::<i64>(tests);
