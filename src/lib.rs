@@ -60,7 +60,7 @@ impl <T: EncodeStr> EncodeStr for &T {
 #[macro_export]
 macro_rules! write {
     ($b:expr, $($t:expr),+) => {
-        |buff: &mut [u8]| -> Result<usize, Error>{
+        |buff: &mut [u8]| -> Result<usize, $crate::Error>{
             let mut n = 0;
         
             $(
@@ -76,21 +76,15 @@ macro_rules! write {
 #[macro_export]
 macro_rules! write_str {
     ($b:expr, $($t:expr),+) => {
-        |buff: &mut [u8]| -> Result<usize, Error>{
-            let mut n = 0;
-        
-            $(
-                n += EncodeStr::write(& $t, &mut buff[n..])?;
-            )*
-
-            core::str::from_utf8(&buff[..n]).map_err(|_| Error::InvalidUtf8)
-        }(&mut $b)
+        $crate::write!($b, $($t),+).map(|n| {
+            core::str::from_utf8(& $b[..n]).unwrap()
+        })
     }
 }
 
 #[cfg(test)]
 mod test {
-    use crate::{EncodeStr, Error};
+    use crate::{EncodeStr};
 
     #[test]
     fn join_str() {

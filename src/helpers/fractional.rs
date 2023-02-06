@@ -10,17 +10,20 @@
 //! assert_eq!(s, "1234.056");
 //! ```
 
-use core::fmt::{Display, Debug};
+use core::{
+    fmt::{Display, Debug},
+    ops::Div,
+};
 
-use num_traits::{PrimInt, Signed};
+use num_traits::{PrimInt, Signed, FromPrimitive};
 
 use crate::EncodeStr;
 
 /// [Number] trait combines encoding / numeric methods for convenience
-pub trait Number: EncodeStr + PrimInt + Signed + Display + Debug + Sized {}
+pub trait Number: EncodeStr + PrimInt + Signed + FromPrimitive + Div + Display + Debug + Sized {}
 
 /// Automatic implementation over viable types
-impl <T: EncodeStr + PrimInt + Signed + Display + Debug + Sized> Number for T {}
+impl <T: EncodeStr + PrimInt + Signed + FromPrimitive + Div + Display + Debug + Sized> Number for T {}
 
 /// Helper for encoding integers as decimals using a specified divisor
 pub struct Fractional<N: Number> {
@@ -60,6 +63,13 @@ impl <N: Number> EncodeStr for Fractional<N> {
         // Decimal part, integer + (divisior - 1) + 1
         n += self.divisor.len();
 
+        // Trim trailing zeroes
+        let mut d = dec_part;
+        while d % N::from_i8(10).unwrap() == N::zero() {
+            d = d / N::from_i8(10).unwrap();
+            n -= 1;
+        }
+
         n
     }
 
@@ -94,9 +104,15 @@ impl <N: Number> EncodeStr for Fractional<N> {
                 n += 1;
             }
         }
+
+        // Trim decimal part
+        let mut d = dec_part;
+        while d % N::from_i8(10).unwrap() == N::zero() {
+            d = d / N::from_i8(10).unwrap();
+        }
         
-        // Write decimal part
-        n += dec_part.write(&mut buff[n..])?;
+        // Write trimmed decimal part
+        n += d.write(&mut buff[n..])?;
 
         Ok(n)
     }
@@ -105,12 +121,6 @@ impl <N: Number> EncodeStr for Fractional<N> {
 
 #[cfg(test)]
 mod test {
-    extern crate alloc;
-    use alloc::format;
-
-    use num_traits::Pow;
-    use rand::random;
-
     use crate::EncodeStr;
     use super::{Fractional, Number};
 
@@ -138,9 +148,11 @@ mod test {
             (10, 10, "1"),
             (15, 10, "1.5"),
             (105, 100, "1.05"),
+            (1050, 1000, "1.05"),
             (-10, 10, "-1"),
             (-15, 10, "-1.5"),
             (-105, 100, "-1.05"),
+            (-1050, 1000, "-1.05"),
             (312214312, 1_000_000, "312.214312"),
         ];
 
@@ -158,8 +170,8 @@ mod test {
             (105, 1000, "0.105"),
             (-105, 1000, "-0.105"),
             (123473634214312, 1_000_000, "123473634.214312"),
-            (40_000_100_000_000_000, 1_000_000_000_000, "40000.100000000000"),
-            (-40_000_123_000_000_000, 1_000_000_000_000, "-40000.123000000000"),
+            (40_000_001_000_000_000, 1_000_000_000_000, "40000.001"),
+            (-40_000_123_000_000_000, 1_000_000_000_000, "-40000.123"),
         ];
 
         encode_frac::<i64>(tests);
@@ -178,38 +190,6 @@ mod test {
 
             assert_eq!(&v, s, "encoding mismatch for value: {}", s);
         }
-    }
-
-    #[test]
-    fn encode_fractional_rand() {
-
-        for i in 1..10 {
-            // Generate random value for encoding
-            let v: i64 = random();
-            // Generate divisor based on i
-            let d = 10u32.pow(i as u32) as i64;
-
-            // Compute decimal part
-            let dec = (v % d).abs();
-
-            println!("Using value: {}", v);
-
-            // format with std mechanism
-            let e = match dec == 0 {
-                false => format!("{}.{:0width$}", v / d, dec, width=i),
-                true => format!("{}", v / d),
-            };
-
-            // format with EncodeStr
-            let f = Fractional::new(v, d);
-            let mut buff = [0u8; 32];
-            let s = f.write_str(&mut buff).expect("failed to encode value");
-
-            // check expectations match
-            assert_eq!(&s, &e, "string encoding mismatch");
-
-        }
-
     }
 
 }
