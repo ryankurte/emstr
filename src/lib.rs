@@ -56,7 +56,7 @@ impl <T: EncodeStr> EncodeStr for &T {
     }
 }
 
-/// Helper macro for joining [EncodeStr] types
+/// Helper macro for joining [EncodeStr] types, returning the number of bytes written on success
 #[macro_export]
 macro_rules! write {
     ($b:expr, $($t:expr),+) => {
@@ -68,6 +68,22 @@ macro_rules! write {
             )*
 
             Ok(n)
+        }(&mut $b)
+    }
+}
+
+/// Helper macro for joining [EncodeStr] types, returning a string slice on success
+#[macro_export]
+macro_rules! write_str {
+    ($b:expr, $($t:expr),+) => {
+        |buff: &mut [u8]| -> Result<usize, Error>{
+            let mut n = 0;
+        
+            $(
+                n += EncodeStr::write(& $t, &mut buff[n..])?;
+            )*
+
+            core::str::from_utf8(&buff[..n]).map_err(|_| Error::InvalidUtf8)
         }(&mut $b)
     }
 }
