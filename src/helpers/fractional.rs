@@ -179,8 +179,6 @@ mod test {
 
     fn encode_frac<N: Number>(tests: &[(N, N, &'static str)]) {
         for (v, d, s) in tests {
-            println!("test v: {} d: {} s: {}", v, d, s);
-
             let d = Fractional::<N>::new(*v, *d);
 
             assert_eq!(d.len(), s.len(), "invalid length for value: {}", s);

@@ -110,12 +110,14 @@ impl_uint_encode!(u8);
 impl_uint_encode!(u16);
 impl_uint_encode!(u32);
 impl_uint_encode!(u64);
+impl_uint_encode!(u128);
 impl_uint_encode!(usize);
 
 impl_sint_encode!(i8);
 impl_sint_encode!(i16);
 impl_sint_encode!(i32);
 impl_sint_encode!(i64);
+impl_sint_encode!(i128);
 impl_uint_encode!(isize);
 
 #[cfg(test)]
@@ -224,4 +226,53 @@ mod test {
             assert_eq!(e, *s, "encode failed for value: {}", v);
         }
     }
+
+    #[test]
+    fn encode_u128() {
+        let tests: &[(u128, &str)] = &[
+            (0, "0"),
+            (1, "1"),
+            (1243566, "1243566"),
+            (u64::MAX as u128, "18446744073709551615"),
+            (u128::MAX, "340282366920938463463374607431768211455"),
+        ];
+
+        for (v, s) in tests {
+            let mut buff = [0u8; 39];
+
+            assert_eq!(v.len(), s.len(), "length mismatch for value: {}", v);
+
+            let e = v.write_str(&mut buff).unwrap();
+
+            assert_eq!(e, *s, "encode failed for value: {}", v);
+        }
+    }
+
+
+    #[test]
+    fn encode_i128() {
+        let tests: &[(i128, &str)] = &[
+            (0, "0"),
+            (1, "1"),
+            (-1, "-1"),
+            (1243566, "1243566"),
+            (-1243566, "-1243566"),
+            (i64::MAX as i128, "9223372036854775807"),
+            ((i64::MIN + 1) as i128, "-9223372036854775807"),
+            (i64::MIN as i128, "-9223372036854775808"),
+            ((i128::MIN + 1) as i128, "-170141183460469231731687303715884105727"),
+            // TODO: handle actual i128::MIN
+        ];
+
+        for (v, s) in tests {
+            let mut buff = [0u8; 40];
+
+            assert_eq!(v.len(), s.len(), "length mismatch for value: {}", v);
+
+            let e = v.write_str(&mut buff).unwrap();
+
+            assert_eq!(e, *s, "encode failed for value: {}", v);
+        }
+    }
+
 }

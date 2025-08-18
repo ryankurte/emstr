@@ -47,6 +47,9 @@ impl <B: AsRef<[u8]>> EncodeStr for Hex<B> {
 
 #[cfg(test)]
 mod test {
+    extern crate alloc;
+    extern crate std;
+    use alloc::string::ToString;
     use super::{Hex, EncodeStr, HEX_MAP};
 
     #[test]
@@ -64,7 +67,7 @@ mod test {
         for i in 0..HEX_MAP.len() {
 
             let a = HEX_MAP[i].to_string();
-            let e = format!("{:x}", i);
+            let e = std::format!("{:x}", i);
 
             assert_eq!(&a, &e);
         }
